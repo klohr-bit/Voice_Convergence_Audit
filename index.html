@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anti-Convergence Engine</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #d4d4d0;
+    --accent: #1a1a1a;
+    --pre-bg: #f0efe9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    line-height: 1.55;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  textarea, select {
+    width: 100%;
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 16px;
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px;
+    resize: vertical;
+  }
+  textarea { min-height: 220px; }
+  select { font-family: inherit; font-size: 14px; padding: 10px 12px; }
+  .row { display: flex; gap: 12px; align-items: end; margin-top: 16px; }
+  .row > div:first-child { flex: 1; }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .output {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+  .output-content {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 16px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .status {
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+  }
+  .error {
+    color: #a02020;
+    background: #faeded;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  pre {
+    background: var(--pre-bg);
+    padding: 16px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<h1>Anti-Convergence Engine</h1>
+<p class="sub">Paste writing. Get the diagnostic plus a rewrite.</p>
+
+<label for="text">Writing</label>
+<textarea id="text" placeholder="Paste your writing here..."></textarea>
+
+<div class="row">
+  <div>
+    <label for="mode">Mode (optional)</label>
+    <select id="mode">
+      <option value="">Let the engine decide</option>
+      <option value="Clean">Clean (clarity, no voice added)</option>
+      <option value="Sharpen">Sharpen (stronger point, preserved intent)</option>
+      <option value="Signature">Signature (known voice, minimal intervention)</option>
+    </select>
+  </div>
+  <button id="run">Analyze</button>
+</div>
+
+<div class="output" id="output" style="display:none;">
+  <div class="output-content" id="output-content"></div>
+</div>
+
+<script>
+  const textEl = document.getElementById("text");
+  const modeEl = document.getElementById("mode");
+  const runBtn = document.getElementById("run");
+  const output = document.getElementById("output");
+  const outputContent = document.getElementById("output-content");
+
+  runBtn.addEventListener("click", async () => {
+    const text = textEl.value.trim();
+    if (!text) return;
+
+    runBtn.disabled = true;
+    output.style.display = "block";
+    outputContent.innerHTML = '<div class="status">Analyzing...</div>';
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, mode: modeEl.value || undefined }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        outputContent.innerHTML = `<div class="error">Error: ${data.error || "Something went wrong"}</div>`;
+      } else {
+        outputContent.textContent = data.result;
+      }
+    } catch (err) {
+      outputContent.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
